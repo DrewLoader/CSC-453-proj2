@@ -49,7 +49,9 @@ static void round_robin_admit(thread new_thread) {
 
 static void lwp_wrap(lwpfun fun, void *arg) {
     int r;
+    printf("lwp_wrap: ENTERED! fun=%p, arg=%p\n", (void*)fun, arg);
     r = fun(arg);
+    printf("lwp_wrap: function returned %d, calling lwp_exit\n", r);
     lwp_exit(r);
 }
 
@@ -251,6 +253,9 @@ void lwp_yield(void) {
         return;
     }
     next = cur_sched->next();
+    printf("lwp_yield: switching from tid=%lu to tid=%lu\n", 
+           cur_thread ? cur_thread->tid : 0, 
+           next ? next->tid : 0);
     if (!next) {
         int status = 0;
         if (cur_thread) {
@@ -261,7 +266,9 @@ void lwp_yield(void) {
 
     prev = cur_thread;
     cur_thread = next;
+    printf("lwp_yield: about to swap_rfiles, next->state.rsp=%lx\n", next->state.rsp);
     swap_rfiles(&(prev->state), &(next->state));
+    printf("lwp_yield: returned from swap_rfiles, cur_thread->tid=%lu\n", cur_thread->tid);
 }
 
 void lwp_exit(int status) {
