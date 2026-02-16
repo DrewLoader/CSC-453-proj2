@@ -17,5 +17,13 @@ AlwaysZero.o: AlwaysZero.c lwp.h schedulers.h
 numbersmain: numbersmain.c liblwp.a
 	$(CC) $(CFLAGS) -o numbersmain numbersmain.c -L. -llwp
 
+randomsnakes: randomsnakes.c liblwp.a HackySnakeSchedulers.o
+	$(CC) $(CFLAGS) -o randomsnakes randomsnakes.c HackySnakeSchedulers.o -L. -llwp -lsnakes -lncurses
+
+hungrysnakes: hungrysnakes.c liblwp.a HackySnakeSchedulers.o
+	$(CC) $(CFLAGS) -o hungrysnakes hungrysnakes.c HackySnakeSchedulers.o -L. -llwp -lsnakes -lncurses
+
 clean:
-	rm -f lwp.o magic64.o AlwaysZero.o liblwp.a numbersmain
+	rm -f lwp.o magic64.o AlwaysZero.o liblwp.a numbersmain randomsnakes hungrysnakes
+
+.PHONY: clean
