@@ -86,18 +86,12 @@ static void round_robin_remove(thread thrd) {
 static thread round_robin_next(void) {
     thread next;
     if (!round_robin_head) {
-        printf("round_robin_next: queue is EMPTY!\n");
         return NULL;
     }
     next = round_robin_head;
-    printf("round_robin_next: returning tid=%lu, ", next->tid);
     if (round_robin_head->tnext != round_robin_head) {
         round_robin_head = round_robin_head->tnext;
         round_robin_end = next;
-        printf("rotated, new head=%lu\n", round_robin_head->tid);
-    }
-    else {
-        printf("only one thread\n");
     }
     return next;
 }
