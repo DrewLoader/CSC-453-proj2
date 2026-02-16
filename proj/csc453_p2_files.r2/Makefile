@@ -18,4 +18,4 @@ numbersmain: numbersmain.c liblwp.a
 	$(CC) $(CFLAGS) -o numbersmain numbersmain.c -L. -llwp
 
 clean:
-	rm -f *.o liblwp.a numbersmain
+	rm -f lwp.o magic64.o AlwaysZero.o liblwp.a numbersmain
