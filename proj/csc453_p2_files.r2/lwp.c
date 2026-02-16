@@ -299,6 +299,9 @@ tid_t lwp_wait(int *status) {
         if (!run) {
             return NO_THREAD;
         }
+        if (!cur_sched) {
+            return NO_THREAD;
+        }
         lwp_yield();
         return lwp_wait(status);
     }
