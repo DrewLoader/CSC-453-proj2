@@ -211,7 +211,10 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
             cur_sched->init();
         }
     }
+    printf("lwp_create: tid=%lu, about to admit, cur_sched=%p, admit=%p\n", 
+       nt->tid, (void*)cur_sched, (void*)cur_sched->admit);
     cur_sched->admit(nt);
+    printf("lwp_create: tid=%lu admitted\n", nt->tid);
     return nt->tid;
 }
 
