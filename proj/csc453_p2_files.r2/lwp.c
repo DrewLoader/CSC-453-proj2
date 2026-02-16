@@ -32,21 +32,17 @@ static void round_robin_admit(thread new_thread) {
     if (!new_thread) {
         return;
     }
-    printf("round_robin_admit: admitting tid=%lu\n", new_thread->tid);
     if (!round_robin_head) {
         round_robin_head = new_thread;
         round_robin_end = new_thread;
         new_thread->tnext = new_thread;
         new_thread->tprev = new_thread;
-        printf("  -> first thread, head=tail=tid %lu\n", new_thread->tid);
     } else {
         new_thread->tnext = round_robin_head;
         new_thread->tprev = round_robin_end;
         round_robin_end->tnext = new_thread;
         round_robin_head->tprev = new_thread;
         round_robin_end = new_thread;
-        printf("  -> added to queue, head=%lu, tail=%lu\n", 
-               round_robin_head->tid, round_robin_end->tid);
     }
 }
 
@@ -205,10 +201,7 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
             cur_sched->init();
         }
     }
-    printf("lwp_create: tid=%lu, about to admit, cur_sched=%p, admit=%p\n", 
-       nt->tid, (void*)cur_sched, (void*)cur_sched->admit);
     cur_sched->admit(nt);
-    printf("lwp_create: tid=%lu admitted\n", nt->tid);
     return nt->tid;
 }
 
