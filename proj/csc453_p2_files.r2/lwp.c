@@ -190,6 +190,14 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     nt->state.r13 = 0;
     nt->state.r14 = 0;
     nt->state.r15 = 0;
+    printf("Stack setup for thread %lu:\n", nt->tid);
+    printf("  sp = %p\n", (void*)sp);
+    printf("  sp[0] (fake BP) = %lx\n", sp[0]);
+    printf("  sp[1] (ret addr) = %lx, lwp_wrap = %p\n", sp[1], (void*)lwp_wrap);
+    printf("  nt->state.rbp = %lx\n", nt->state.rbp);
+    printf("  nt->state.rsp = %lx\n", nt->state.rsp);
+    printf("  nt->state.rdi = %lx (function)\n", nt->state.rdi);
+    printf("  nt->state.rsi = %lx (argument)\n", nt->state.rsi);
     
     nt->lib_one = NULL;
     nt->lib_two = NULL;
