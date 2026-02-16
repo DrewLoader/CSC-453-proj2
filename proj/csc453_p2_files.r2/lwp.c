@@ -32,26 +32,27 @@ static void round_robin_admit(thread new_thread) {
     if (!new_thread) {
         return;
     }
-
+    printf("round_robin_admit: admitting tid=%lu\n", new_thread->tid);
     if (!round_robin_head) {
         round_robin_head = new_thread;
         round_robin_end = new_thread;
         new_thread->tnext = new_thread;
         new_thread->tprev = new_thread;
+        printf("  -> first thread, head=tail=tid %lu\n", new_thread->tid);
     } else {
         new_thread->tnext = round_robin_head;
         new_thread->tprev = round_robin_end;
         round_robin_end->tnext = new_thread;
         round_robin_head->tprev = new_thread;
         round_robin_end = new_thread;
+        printf("  -> added to queue, head=%lu, tail=%lu\n", 
+               round_robin_head->tid, round_robin_end->tid);
     }
 }
 
 static void lwp_wrap(lwpfun fun, void *arg) {
     int r;
-    printf("lwp_wrap: ENTERED! fun=%p, arg=%p\n", (void*)fun, arg);
     r = fun(arg);
-    printf("lwp_wrap: function returned %d, calling lwp_exit\n", r);
     lwp_exit(r);
 }
 
@@ -85,12 +86,18 @@ static void round_robin_remove(thread thrd) {
 static thread round_robin_next(void) {
     thread next;
     if (!round_robin_head) {
+        printf("round_robin_next: queue is EMPTY!\n");
         return NULL;
     }
     next = round_robin_head;
+    printf("round_robin_next: returning tid=%lu, ", next->tid);
     if (round_robin_head->tnext != round_robin_head) {
         round_robin_head = round_robin_head->tnext;
         round_robin_end = next;
+        printf("rotated, new head=%lu\n", round_robin_head->tid);
+    }
+    else {
+        printf("only one thread\n");
     }
     return next;
 }
@@ -192,14 +199,6 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     nt->state.r13 = 0;
     nt->state.r14 = 0;
     nt->state.r15 = 0;
-    printf("Stack setup for thread %lu:\n", nt->tid);
-    printf("  sp = %p\n", (void*)sp);
-    printf("  sp[0] (fake BP) = %lx\n", sp[0]);
-    printf("  sp[1] (ret addr) = %lx, lwp_wrap = %p\n", sp[1], (void*)lwp_wrap);
-    printf("  nt->state.rbp = %lx\n", nt->state.rbp);
-    printf("  nt->state.rsp = %lx\n", nt->state.rsp);
-    printf("  nt->state.rdi = %lx (function)\n", nt->state.rdi);
-    printf("  nt->state.rsi = %lx (argument)\n", nt->state.rsi);
     
     nt->lib_one = NULL;
     nt->lib_two = NULL;
@@ -253,9 +252,6 @@ void lwp_yield(void) {
         return;
     }
     next = cur_sched->next();
-    printf("lwp_yield: switching from tid=%lu to tid=%lu\n", 
-           cur_thread ? cur_thread->tid : 0, 
-           next ? next->tid : 0);
     if (!next) {
         int status = 0;
         if (cur_thread) {
@@ -266,9 +262,7 @@ void lwp_yield(void) {
 
     prev = cur_thread;
     cur_thread = next;
-    printf("lwp_yield: about to swap_rfiles, next->state.rsp=%lx\n", next->state.rsp);
     swap_rfiles(&(prev->state), &(next->state));
-    printf("lwp_yield: returned from swap_rfiles, cur_thread->tid=%lu\n", cur_thread->tid);
 }
 
 void lwp_exit(int status) {
