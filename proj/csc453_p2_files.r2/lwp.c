@@ -176,7 +176,7 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     nt->state.rdi = (unsigned long) function;
     nt->state.rsi = (unsigned long) argument;
     nt->state.rbp = (unsigned long) sp;
-    nt->state.rsp = (unsigned long) sp;
+    nt->state.rsp = (unsigned long) (sp + 1);
 
     nt->state.rax = 0;
     nt->state.rbx = 0;
