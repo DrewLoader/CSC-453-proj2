@@ -205,9 +205,13 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     nt->sched_one = NULL;
     nt->sched_two = NULL;
     add_thread(nt);
-    if (cur_sched) {
-        cur_sched->admit(nt);
+    if (!cur_sched) {
+        cur_sched = RoundRobin;
+        if (cur_sched->init) {
+            cur_sched->init();
+        }
     }
+    cur_sched->admit(nt);
     return nt->tid;
 }
 
