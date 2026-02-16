@@ -218,9 +218,9 @@ void lwp_start(void) {
     thread t;
     if (!cur_sched) {
         cur_sched = RoundRobin;
-    }
-    if (cur_sched->init) {
-        cur_sched->init();
+        if (cur_sched->init) {
+            cur_sched->init();
+        }
     }
     t = malloc(sizeof(context));
     if (!t) {
