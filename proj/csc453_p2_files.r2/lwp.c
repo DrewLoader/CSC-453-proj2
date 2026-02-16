@@ -47,6 +47,12 @@ static void round_robin_admit(thread new_thread) {
     }
 }
 
+static void lwp_wrap(lwpfun fun, void *arg) {
+    int r;
+    r = fun(arg);
+    lwp_exit(r);
+}
+
 static void round_robin_remove(thread thrd) {
     if (!thrd) {
         return;
@@ -196,11 +202,7 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     return nt->tid;
 }
 
-static void lwp_wrap(lwpfun fun, void *arg) {
-    int r;
-    r = fun(arg);
-    lwp_exit(r);
-}
+
 
 void lwp_start(void) {
     thread t;
