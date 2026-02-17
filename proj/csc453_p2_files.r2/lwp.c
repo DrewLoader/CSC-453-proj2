@@ -121,17 +121,20 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
         return NO_THREAD;
     }
     nt->tid = next_thread++;
-    page_size = sysconf(_SC_PAGE_SIZE);
+    stack_increment = 8 * 1024 * 1024;
     if (getrlimit(RLIMIT_STACK, &limit) == 0) {
         if (limit.rlim_cur != RLIM_INFINITY) {
-            stack_increment = limit.rlim_cur;
+            if (limit.rlim_cur > 0){
+                stack_increment = (size_t)limit.rlim_cur;
+            }
         }
     }
-    else {
-        stack_increment = 8 * 1024 * 1024;
+    page_size = sysconf(_SC_PAGE_SIZE);
+    if (page_size <= 0) {
+        page_size = 4096;
     }
-    if (stack_increment % page_size) {
-        stack_increment = ((stack_increment / page_size) + 1) * page_size;
+    if (stack_increment % (size_t)page_size) {
+        stack_increment = ((stack_increment / (size_t)page_size) + 1) * (size_t)page_size;
     }
     nt->stack = mmap(NULL, stack_increment, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, -1, 0);
     if (nt->stack == MAP_FAILED) {
@@ -243,6 +246,7 @@ tid_t lwp_wait(int *status) {
     tid_t ret;
     int run;
     while (1) {
+        stop = NULL;
         t = threads;
         while(t) {
             if (LWPTERMINATED(t->status)) {
