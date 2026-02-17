@@ -1,0 +1,5 @@
+Andrew Loader
+
+Instructions: to run code simply run make. make numbersmain creates the test
+for numbersmain. make hungrysnakes will create the test for hungry snakes.
+
