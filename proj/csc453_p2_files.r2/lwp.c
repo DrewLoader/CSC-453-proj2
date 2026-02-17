@@ -14,6 +14,15 @@ static thread round_robin_head = NULL;
 static thread round_robin_end = NULL;
 #define tnext sched_one
 #define tprev sched_two
+static void round_robin_init(void);
+static void round_robin_shutdown(void);
+static void round_robin_admit(thread new_thread);
+static void round_robin_remove(thread thrd);
+static thread round_robin_next(void);
+static void add_thread(thread t);
+static void remove_thread(thread t);
+static void lwp_wrap(lwpfun fun, void *arg);
+
 static void round_robin_init(void) {
     round_robin_head = NULL;
     round_robin_end = NULL;
@@ -39,11 +48,52 @@ static void round_robin_admit(thread new_thread) {
         round_robin_end = new_thread;
     }
 }
+static void remove_thread(thread t) {
+    thread prev = NULL;
+    thread cur = threads;
+    while (cur) {
+        if (cur == t) {
+            if (prev) {
+                prev->lib_one = cur->lib_one;
+            } else {
+                threads = cur->lib_one;
+            }
+            cur->lib_one = NULL;
+            return;
+        }
+        prev = cur;
+        cur = cur->lib_one;
+    }
+}
+static void add_thread(thread t) {
+    t->lib_one = threads;
+    threads = t;
+}
 static void lwp_wrap(lwpfun fun, void *arg) {
     int r;
     r = fun(arg);
     lwp_exit(r);
 }
+void lwp_yield(void) {
+    thread next;
+    thread prev;
+    if (!cur_sched) {
+        return;
+    }
+
+    next = cur_sched->next();
+    if (!next) {
+        int status = 0;
+        if (cur_thread) {
+            status = LWPTERMSTAT(cur_thread->status);
+        }
+        exit(status);
+    }
+    prev = cur_thread;
+    cur_thread = next;
+    swap_rfiles(&(prev->state), &(next->state));
+}
+
 static void round_robin_remove(thread thrd) {
     if (!thrd) {
         return;
@@ -87,28 +137,9 @@ static struct scheduler round_robin_start = {
     round_robin_remove,
     round_robin_next
 };
+
 scheduler RoundRobin = &round_robin_start;
-static void add_thread(thread t) {
-    t->lib_one = threads;
-    threads = t;
-}
-static void remove_thread(thread t) {
-    thread prev = NULL;
-    thread cur = threads;
-    while (cur) {
-        if (cur == t) {
-            if (prev) {
-                prev->lib_one = cur->lib_one;
-            } else {
-                threads = cur->lib_one;
-            }
-            cur->lib_one = NULL;
-            return;
-        }
-        prev = cur;
-        cur = cur->lib_one;
-    }
-}
+
 
 tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     thread nt;
@@ -129,6 +160,7 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
             }
         }
     }
+
     page_size = sysconf(_SC_PAGE_SIZE);
     if (page_size <= 0) {
         page_size = 4096;
@@ -149,6 +181,7 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     *sp = (unsigned long)lwp_wrap;
     sp--;
     *sp = 0;
+
     while (((unsigned long)sp % 16) != 0) {
         sp--;
         *sp = 0;
@@ -183,6 +216,7 @@ tid_t lwp_create(lwpfun function, void *argument, size_t stacksize) {
     cur_sched->admit(nt);
     return nt->tid;
 }
+
 void lwp_start(void) {
     thread t;
     if (!cur_sched) {
@@ -211,24 +245,7 @@ void lwp_start(void) {
     cur_thread = t;
     lwp_yield();
 }
-void lwp_yield(void) {
-    thread next;
-    thread prev;
-    if (!cur_sched) {
-        return;
-    }
-    next = cur_sched->next();
-    if (!next) {
-        int status = 0;
-        if (cur_thread) {
-            status = LWPTERMSTAT(cur_thread->status);
-        }
-        exit(status);
-    }
-    prev = cur_thread;
-    cur_thread = next;
-    swap_rfiles(&(prev->state), &(next->state));
-}
+
 void lwp_exit(int status) {
     if (!cur_thread) {
         exit(status & 0xFF);
@@ -237,6 +254,7 @@ void lwp_exit(int status) {
     if (cur_sched) {
         cur_sched->remove(cur_thread);
     }
+
     lwp_yield();
     exit(status & 0xFF);
 }
@@ -275,6 +293,7 @@ tid_t lwp_wait(int *status) {
         }
         lwp_yield();
     }
+
     if (status) {
         *status = stop->status;
     }
@@ -285,6 +304,7 @@ tid_t lwp_wait(int *status) {
             munmap(stop->stack, stop->stacksize);
         }
     }
+
     free(stop);
     return ret;
     
@@ -293,6 +313,7 @@ tid_t lwp_gettid(void) {
     if (!cur_thread) {
         return NO_THREAD;
     }
+
     return cur_thread->tid;
 }
 thread tid2thread(tid_t tid) {
@@ -305,6 +326,7 @@ thread tid2thread(tid_t tid) {
     }
     return NULL;
 }
+
 void lwp_set_scheduler(scheduler new_sched) {
     thread t;
     scheduler old_sched;
@@ -327,6 +349,7 @@ void lwp_set_scheduler(scheduler new_sched) {
             old_sched->shutdown();
         }
     }
+
     cur_sched = new_sched;
 }
 scheduler lwp_get_scheduler(void) {
